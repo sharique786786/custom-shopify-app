@@ -26,6 +26,10 @@ const shopify = shopifyApi({
 app.use('/api/discount', discountRoutes(shopify));
 app.use('/api/shipping', shippingRoutes(shopify));
 
+app.get('/', (req, res) => {
+  res.send('Custom Shopify app is live ✅');
+});
+
 // Start server
 app.listen(PORT, () => {
   console.log(`Server listening on http://localhost:${PORT}`);
