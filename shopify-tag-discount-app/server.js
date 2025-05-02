@@ -9,6 +9,8 @@ import authRoutes from './routes/auth.js'; // Adjust path as needed
 dotenv.config();
 
 const app = express();
+app.use('/', authRoutes);
+
 const PORT = process.env.PORT || 10000;
 
 app.use(express.json());
