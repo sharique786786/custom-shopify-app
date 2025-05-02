@@ -4,6 +4,7 @@ import { shopifyApi, LATEST_API_VERSION } from '@shopify/shopify-api';
 import dotenv from 'dotenv';
 import discountRoutes from './routes/discount.js';
 import shippingRoutes from './routes/shipping.js';
+import authRoutes from './routes/auth.js'; // Adjust path as needed
 
 dotenv.config();
 
