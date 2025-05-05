@@ -1,12 +1,11 @@
-import { shopifyApi, LATEST_API_VERSION } from '@shopify/shopify-api';
-import { MemorySessionStorage } from '@shopify/shopify-api/dist/session/storage/memory';
+import { shopifyApi, session } from '@shopify/shopify-api';
 
 const shopify = shopifyApi({
   apiKey: process.env.SHOPIFY_API_KEY,
   apiSecretKey: process.env.SHOPIFY_API_SECRET,
-  scopes: process.env.SHOPIFY_SCOPES.split(','),
-  hostName: process.env.SHOPIFY_APP_HOST.replace(/https?:\/\//, ''),
-  apiVersion: LATEST_API_VERSION,
+  scopes: process.env.SCOPES.split(','),
+  hostName: process.env.HOST.replace(/^https:\/\//, ''),
   isEmbeddedApp: true,
-  sessionStorage: new MemorySessionStorage(),
+  apiVersion: '2024-01',
+  sessionStorage: new session.MemorySessionStorage(), // ✅ Correct usage
 });
