@@ -1,4 +1,5 @@
-import { shopifyApi, LATEST_API_VERSION, MemorySessionStorage } from '@shopify/shopify-api';
+import { shopifyApi, LATEST_API_VERSION } from '@shopify/shopify-api';
+import { MemorySessionStorage } from '@shopify/shopify-api/dist/session/storage/memory';
 
 const shopify = shopifyApi({
   apiKey: process.env.SHOPIFY_API_KEY,
@@ -7,5 +8,5 @@ const shopify = shopifyApi({
   hostName: process.env.SHOPIFY_APP_HOST.replace(/https?:\/\//, ''),
   apiVersion: LATEST_API_VERSION,
   isEmbeddedApp: true,
-  sessionStorage: new MemorySessionStorage(), // ✅ without async
+  sessionStorage: new MemorySessionStorage(),
 });
