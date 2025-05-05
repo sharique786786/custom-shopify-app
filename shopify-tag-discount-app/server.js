@@ -27,7 +27,41 @@ app.use('/api/discount', discountRoutes(shopify));
 app.use('/api/shipping', shippingRoutes(shopify));
 
 app.get('/', (req, res) => {
-  res.send('Custom Shopify app is live ✅');
+  const shop = req.query.shop;
+  if (!shop) return res.status(400).send('Missing shop parameter ❌');
+
+  const redirectUri = `${process.env.SHOPIFY_APP_HOST}/auth/callback`;
+  const installUrl = `https://${shop}/admin/oauth/authorize` +
+    `?client_id=${process.env.SHOPIFY_API_KEY}` +
+    `&scope=${process.env.SHOPIFY_SCOPES}` +
+    `&redirect_uri=${redirectUri}`;
+
+  res.redirect(installUrl);
+});
+
+app.get('/auth/callback', async (req, res) => {
+  const { shop, code } = req.query;
+  if (!shop || !code) return res.status(400).send('Missing shop or code ❌');
+
+  try {
+    const result = await fetch(`https://${shop}/admin/oauth/access_token`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        client_id: process.env.SHOPIFY_API_KEY,
+        client_secret: process.env.SHOPIFY_API_SECRET,
+        code,
+      }),
+    });
+
+    const data = await result.json();
+    console.log('✅ Access token:', data.access_token);
+
+    res.send('✅ App installed successfully!');
+  } catch (err) {
+    console.error('Error exchanging token:', err);
+    res.status(500).send('Failed to install app ❌');
+  }
 });
 
 // Start server
