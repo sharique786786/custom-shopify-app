@@ -1,4 +1,4 @@
-import { shopifyApi, LATEST_API_VERSION } from '@shopify/shopify-api';
+import { shopifyApi, MemorySessionStorage } from '@shopify/shopify-api'; // Only works in older versions
 import { MemorySessionStorage } from '@shopify/shopify-api/dist/session/storage/memory';
 
 const shopify = shopifyApi({
