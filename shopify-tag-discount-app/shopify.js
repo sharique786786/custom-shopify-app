@@ -1,17 +1,13 @@
-// shopify.js
-import { shopifyApi, LATEST_API_VERSION } from '@shopify/shopify-api';
-import dotenv from 'dotenv';
-
-dotenv.config();
+import { shopifyApi, MemorySessionStorage } from '@shopify/shopify-api';
 
 const shopify = shopifyApi({
   apiKey: process.env.SHOPIFY_API_KEY,
   apiSecretKey: process.env.SHOPIFY_API_SECRET,
-  scopes: process.env.SHOPIFY_SCOPES.split(','),
-  hostName: process.env.SHOPIFY_APP_HOST.replace(/https?:\/\//, ''), // e.g. "custom-shopify-app.onrender.com"
-  apiVersion: LATEST_API_VERSION,
+  scopes: process.env.SCOPES.split(','),
+  hostName: process.env.HOST.replace(/^https:\/\//, ''),
   isEmbeddedApp: true,
-  sessionStorage: new (await import('@shopify/shopify-api')).MemorySessionStorage(), // or use a DB-backed store
+  apiVersion: '2024-01',
+  sessionStorage: new MemorySessionStorage(), // ✅ Correct usage
 });
 
 export default shopify;
