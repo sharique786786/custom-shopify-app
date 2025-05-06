@@ -6,7 +6,7 @@ const CUSTOMER_DISCOUNTS = [
   { tag: 'DESIGN2030', discount: 20, min_spend: 40000, max_spend: 249999, message: 'DESIGN -20%', type: 'min_and_max' },
   { tag: 'FRIENDSANDFAMILY', discount: 20, message: 'FRIENDS AND FAMILY -20%', type: 'flat' }
 ];
-
+ 
 export default function discountRoutes(shopify) {
   const router = express.Router();
 
