@@ -1,5 +1,7 @@
 import '@shopify/shopify-api/adapters/node';
 import express from 'express';
+import authRoutes from './routes/auth.js'; // Adjust path as needed
+
 import { shopifyApi, LATEST_API_VERSION } from '@shopify/shopify-api';
 import dotenv from 'dotenv';
 import discountRoutes from './routes/discount.js';
@@ -8,7 +10,9 @@ import shippingRoutes from './routes/shipping.js';
 dotenv.config();
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+app.use('/', authRoutes);
+
+const PORT = process.env.PORT || 10000;
 
 app.use(express.json());
 
@@ -17,7 +21,7 @@ const shopify = shopifyApi({
   apiKey: process.env.SHOPIFY_API_KEY,
   apiSecretKey: process.env.SHOPIFY_API_SECRET,
   scopes: process.env.SHOPIFY_SCOPES.split(','),
-  hostName: process.env.SHOPIFY_APP_HOST.replace(/https?:\/\//, ''),
+  hostName: (process.env.SHOPIFY_APP_HOST || '').replace(/https?:\/\//, ''),
   apiVersion: LATEST_API_VERSION,
   isEmbeddedApp: true,
 });
@@ -26,45 +30,51 @@ const shopify = shopifyApi({
 app.use('/api/discount', discountRoutes(shopify));
 app.use('/api/shipping', shippingRoutes(shopify));
 
-app.get('/', (req, res) => {
-  const shop = req.query.shop;
-  if (!shop) return res.status(400).send('Missing shop parameter ❌');
+// app.get('/', (req, res) => {
+//   res.send('Custom Shopify app is live ✅');
+// });
 
-  const redirectUri = ${process.env.SHOPIFY_APP_HOST}/auth/callback;
-  const installUrl = https://${shop}/admin/oauth/authorize +
-    ?client_id=${process.env.SHOPIFY_API_KEY} +
-    &scope=${process.env.SHOPIFY_SCOPES} +
-    &redirect_uri=${redirectUri};
+app.get('/', async (req, res) => {
+  const { shop } = req.query;
 
-  res.redirect(installUrl);
+  if (!shop) {
+    return res.send('Missing "shop" query parameter ❌');
+  }
+
+  try {
+    const authRoute = await shopify.auth.begin({
+      shop,
+      callbackPath: '/auth/callback',
+      isOnline: true,
+      rawRequest: req,
+      rawResponse: res,
+    });
+
+    return res.redirect(authRoute);
+  } catch (error) {
+    console.error('Error starting OAuth:', error);
+    return res.status(500).send('Error starting Shopify OAuth');
+  }
 });
 
 app.get('/auth/callback', async (req, res) => {
-  const { shop, code } = req.query;
-  if (!shop || !code) return res.status(400).send('Missing shop or code ❌');
-
   try {
-    const result = await fetch(https://${shop}/admin/oauth/access_token, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        client_id: process.env.SHOPIFY_API_KEY,
-        client_secret: process.env.SHOPIFY_API_SECRET,
-        code,
-      }),
+    const session = await shopify.auth.callback({
+      rawRequest: req,
+      rawResponse: res,
     });
 
-    const data = await result.json();
-    console.log('✅ Access token:', data.access_token);
+    // You can store the session.accessToken and session.shop if needed
+    console.log('OAuth session:', session);
 
-    res.send('✅ App installed successfully!');
-  } catch (err) {
-    console.error('Error exchanging token:', err);
-    res.status(500).send('Failed to install app ❌');
+    return res.redirect(`/?shop=${session.shop}`);
+  } catch (error) {
+    console.error('OAuth callback error:', error);
+    return res.status(500).send('Failed to complete OAuth process');
   }
 });
 
 // Start server
 app.listen(PORT, () => {
-  console.log(Server listening on http://localhost:${PORT});
+  console.log(`Server listening on http://localhost:${PORT}`);
 });
