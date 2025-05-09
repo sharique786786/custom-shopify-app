@@ -30,11 +30,11 @@ app.get('/', (req, res) => {
   const shop = req.query.shop;
   if (!shop) return res.status(400).send('Missing shop parameter ❌');
 
-  const redirectUri = ${process.env.SHOPIFY_APP_HOST}/auth/callback;
-  const installUrl = https://${shop}/admin/oauth/authorize +
-    ?client_id=${process.env.SHOPIFY_API_KEY} +
-    &scope=${process.env.SHOPIFY_SCOPES} +
-    &redirect_uri=${redirectUri};
+  const redirectUri = `${process.env.SHOPIFY_APP_HOST}/auth/callback`;
+  const installUrl = `https://${shop}/admin/oauth/authorize` +
+    `?client_id=${process.env.SHOPIFY_API_KEY}` +
+    `&scope=${process.env.SHOPIFY_SCOPES}` +
+    `&redirect_uri=${redirectUri}`;
 
   res.redirect(installUrl);
 });
@@ -44,7 +44,7 @@ app.get('/auth/callback', async (req, res) => {
   if (!shop || !code) return res.status(400).send('Missing shop or code ❌');
 
   try {
-    const result = await fetch(https://${shop}/admin/oauth/access_token, {
+    const result = await fetch(`https://${shop}/admin/oauth/access_token`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -66,5 +66,5 @@ app.get('/auth/callback', async (req, res) => {
 
 // Start server
 app.listen(PORT, () => {
-  console.log(Server listening on http://localhost:${PORT});
+  console.log(`Server listening on http://localhost:${PORT}`);
 });
