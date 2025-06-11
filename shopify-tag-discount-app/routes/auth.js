@@ -1,7 +1,8 @@
-var express = require('express');
-var {shopifyApi, RequestedTokenType} = require('@shopify/shopify-api');
+import express from 'express';
+import { shopifyApi, RequestedTokenType } from '@shopify/shopify-api';
 
-var router = express.Router();
+const router = express.Router();
+
 const shopify = shopifyApi({
   apiKey: process.env.SHOPIFY_API_KEY,
   apiSecretKey: process.env.SHOPIFY_API_SECRET || '',
@@ -19,62 +20,43 @@ function getSessionTokenHeader(request) {
 
 function getSessionTokenFromUrlParam(request) {
   const searchParams = new URLSearchParams(request.url);
-
   return searchParams.get('id_token');
 }
 
 function redirectToSessionTokenBouncePage(req, res) {
   const searchParams = new URLSearchParams(req.query);
-  // Remove `id_token` from the query string to prevent an invalid session token sent to the redirect path.
   searchParams.delete('id_token');
-
-  // Using shopify-reload path to redirect the bounce automatically.
-  searchParams.append(
-    'shopify-reload',
-    `${req.path}?${searchParams.toString()}`
-  );
+  searchParams.append('shopify-reload', `${req.path}?${searchParams.toString()}`);
   res.redirect(`/session-token-bounce?${searchParams.toString()}`);
 }
 
-router.get('/session-token-bounce', async function (req, res, next) {
+router.get('/session-token-bounce', (req, res) => {
   res.setHeader("Content-Type", "text/html");
-  // "process.env.SHOPIFY_API_KEY" is available if you use Shopify CLI to run your app.
-  // You can also replace it with your App's Client ID manually.
   const html = `
-  <head>
+    <head>
       <meta name="shopify-api-key" content="${process.env.SHOPIFY_API_KEY}" />
       <script src="https://cdn.shopify.com/shopifycloud/app-bridge.js"></script>
-  </head>
-  `;
+    </head>`;
   res.send(html);
 });
 
-router.get('/authorize', async function (req, res, next) {
+router.get('/authorize', async (req, res) => {
   let encodedSessionToken = null;
   let decodedSessionToken = null;
   try {
     encodedSessionToken =
       getSessionTokenHeader(req) || getSessionTokenFromUrlParam(req);
 
-    // "shopify" is an instance of the Shopify API library object,
-    // You can install and configure the Shopify API library through: https://www.npmjs.com/package/@shopify/shopify-api
     decodedSessionToken = await shopify.session.decodeSessionToken(
       encodedSessionToken
     );
   } catch (e) {
-    // Handle invalid session token error
-    const isDocumentRequest = !request.headers.get("authorization");
+    const isDocumentRequest = !req.headers["authorization"];
     if (isDocumentRequest) {
       return redirectToSessionTokenBouncePage(req, res);
     }
 
-    throw new Response(undefined, {
-      status: 401,
-      statusText: 'Unauthorized',
-      headers: new Headers({
-        'X-Shopify-Retry-Invalid-Session-Request': '1',
-      }),
-    });
+    return res.status(401).setHeader("X-Shopify-Retry-Invalid-Session-Request", "1").end();
   }
 
   const dest = new URL(decodedSessionToken.dest);
@@ -82,16 +64,16 @@ router.get('/authorize', async function (req, res, next) {
   const accessToken = await shopify.auth.tokenExchange({
     shop,
     sessionToken: encodedSessionToken,
-    requestedTokenType: RequestedTokenType.OnlineAccessToken, // or RequestedTokenType.OfflineAccessToken
+    requestedTokenType: RequestedTokenType.OnlineAccessToken,
   });
 
   res.setHeader("Content-Type", "text/html");
   const html = `
-  <body>
-    <h1>Retrieved access Token</h1>
-    <p>${JSON.stringify(accessToken, null, 2)}</p>
-  </body>`;
+    <body>
+      <h1>Retrieved access Token</h1>
+      <p>${JSON.stringify(accessToken, null, 2)}</p>
+    </body>`;
   res.send(html);
 });
 
-module.exports = router;
+export default router;
