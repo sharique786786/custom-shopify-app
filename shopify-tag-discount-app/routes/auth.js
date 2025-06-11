@@ -1,56 +1,97 @@
-// auth.js
-import express from 'express';
-import shopify from '../shopify.js'; // make sure this file exports your shopify object
+var express = require('express');
+var {shopifyApi, RequestedTokenType} = require('@shopify/shopify-api');
 
-const router = express.Router();
-
-/**
- * Step 1: Start Auth
- * GET /auth?shop={shop}.myshopify.com
- */
-router.get('/auth', async (req, res) => {
-  const { shop } = req.query;
-
-  if (!shop) {
-    return res.status(400).send('Missing "shop" query parameter ❌');
-  }
-
-  try {
-    const redirectUrl = await shopify.auth.beginAuth(
-      req,
-      res,
-      shop,
-      '/auth/callback', // relative to your app host, must match allowed redirect in Shopify Partner dashboard
-      true
-    );
-    return res.redirect(redirectUrl);
-  } catch (e) {
-    console.error('Error during beginAuth:', e);
-    return res.status(500).send('Failed to begin authentication');
-  }
+var router = express.Router();
+const shopify = shopifyApi({
+  apiKey: process.env.SHOPIFY_API_KEY,
+  apiSecretKey: process.env.SHOPIFY_API_SECRET || '',
+  apiVersion: 'unstable',
+  appUrl: process.env.SHOPIFY_APP_URL || '',
+  scopes: process.env.SCOPES?.split(','),
+  hostScheme: process.env.HOST?.split('://')[0],
+  hostName: process.env.HOST?.replace(/https?:\/\//, ''),
+  isEmbeddedApp: true,
 });
 
-/**
- * Step 2: Callback
- * GET /auth/callback
- */
-router.get('/auth/callback', async (req, res) => {
-  try {
-    const session = await shopify.auth.validateAuthCallback(
-      req,
-      res,
-      req.query
-    );
+function getSessionTokenHeader(request) {
+  return request.headers['authorization']?.replace('Bearer ', '');
+}
 
-    // Optional: Store the session somewhere for later (e.g., DB)
-    console.log('✅ App installed successfully for shop:', session.shop);
+function getSessionTokenFromUrlParam(request) {
+  const searchParams = new URLSearchParams(request.url);
 
-    // Redirect to your app dashboard or landing page
-    return res.redirect(`/?shop=${session.shop}`);
-  } catch (e) {
-    console.error('Auth Callback Error:', e);
-    return res.status(500).send('Authentication failed');
-  }
+  return searchParams.get('id_token');
+}
+
+function redirectToSessionTokenBouncePage(req, res) {
+  const searchParams = new URLSearchParams(req.query);
+  // Remove `id_token` from the query string to prevent an invalid session token sent to the redirect path.
+  searchParams.delete('id_token');
+
+  // Using shopify-reload path to redirect the bounce automatically.
+  searchParams.append(
+    'shopify-reload',
+    `${req.path}?${searchParams.toString()}`
+  );
+  res.redirect(`/session-token-bounce?${searchParams.toString()}`);
+}
+
+router.get('/session-token-bounce', async function (req, res, next) {
+  res.setHeader("Content-Type", "text/html");
+  // "process.env.SHOPIFY_API_KEY" is available if you use Shopify CLI to run your app.
+  // You can also replace it with your App's Client ID manually.
+  const html = `
+  <head>
+      <meta name="shopify-api-key" content="${process.env.SHOPIFY_API_KEY}" />
+      <script src="https://cdn.shopify.com/shopifycloud/app-bridge.js"></script>
+  </head>
+  `;
+  res.send(html);
 });
 
-export default router;
+router.get('/authorize', async function (req, res, next) {
+  let encodedSessionToken = null;
+  let decodedSessionToken = null;
+  try {
+    encodedSessionToken =
+      getSessionTokenHeader(req) || getSessionTokenFromUrlParam(req);
+
+    // "shopify" is an instance of the Shopify API library object,
+    // You can install and configure the Shopify API library through: https://www.npmjs.com/package/@shopify/shopify-api
+    decodedSessionToken = await shopify.session.decodeSessionToken(
+      encodedSessionToken
+    );
+  } catch (e) {
+    // Handle invalid session token error
+    const isDocumentRequest = !request.headers.get("authorization");
+    if (isDocumentRequest) {
+      return redirectToSessionTokenBouncePage(req, res);
+    }
+
+    throw new Response(undefined, {
+      status: 401,
+      statusText: 'Unauthorized',
+      headers: new Headers({
+        'X-Shopify-Retry-Invalid-Session-Request': '1',
+      }),
+    });
+  }
+
+  const dest = new URL(decodedSessionToken.dest);
+  const shop = dest.hostname;
+  const accessToken = await shopify.auth.tokenExchange({
+    shop,
+    sessionToken: encodedSessionToken,
+    requestedTokenType: RequestedTokenType.OnlineAccessToken, // or RequestedTokenType.OfflineAccessToken
+  });
+
+  res.setHeader("Content-Type", "text/html");
+  const html = `
+  <body>
+    <h1>Retrieved access Token</h1>
+    <p>${JSON.stringify(accessToken, null, 2)}</p>
+  </body>`;
+  res.send(html);
+});
+
+module.exports = router;
