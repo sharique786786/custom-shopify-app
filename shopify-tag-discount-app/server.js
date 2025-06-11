@@ -1,13 +1,11 @@
-import '@shopify/shopify-api/adapters/node';
-import express from 'express';
-import authRoutes from './routes/auth.js'; // Adjust path as needed
+require('@shopify/shopify-api/adapters/node');
+const express = require('express');
+const authRoutes = require('./routes/auth.js');
+require('dotenv').config();
 
-import { shopifyApi, LATEST_API_VERSION } from '@shopify/shopify-api';
-import dotenv from 'dotenv';
-import discountRoutes from './routes/discount.js';
-import shippingRoutes from './routes/shipping.js';
-
-dotenv.config();
+const { shopifyApi, LATEST_API_VERSION } = require('@shopify/shopify-api');
+const discountRoutes = require('./routes/discount.js');
+const shippingRoutes = require('./routes/shipping.js');
 
 const app = express();
 app.use('/', authRoutes);
