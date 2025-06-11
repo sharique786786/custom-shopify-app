@@ -1,15 +1,15 @@
-var express = require('express');
-var {shopifyApi, RequestedTokenType} = require('@shopify/shopify-api');
+import express from 'express';
+import { shopifyApi, RequestedTokenType } from '@shopify/shopify-api';
 
-var router = express.Router();
+const router = express.Router();
 const shopify = shopifyApi({
   apiKey: process.env.SHOPIFY_API_KEY,
   apiSecretKey: process.env.SHOPIFY_API_SECRET || '',
   apiVersion: 'unstable',
-  appUrl: process.env.SHOPIFY_APP_URL || '',
-  scopes: process.env.SCOPES?.split(','),
-  hostScheme: process.env.HOST?.split('://')[0],
-  hostName: process.env.HOST?.replace(/https?:\/\//, ''),
+  appUrl: process.env.SHOPIFY_STORE_URL || '',
+  scopes: process.env.SHOPIFY_SCOPES?.split(','),
+  hostScheme: process.env.SHOPIFY_APP_HOST?.split('://')[0],
+  hostName: process.env.SHOPIFY_APP_HOST?.replace(/https?:\/\//, ''),
   isEmbeddedApp: true,
 });
 
