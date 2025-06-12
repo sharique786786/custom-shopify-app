@@ -1,12 +1,12 @@
 import express from 'express';
 
 const CUSTOMER_DISCOUNTS = [
-  { tag: 'VIP20', discount: 20, message: 'VIP -20%', type: 'flat' },
+  { tag: 'VIP20', discount: 20, message: 'Tag Based Discount- VIP -20%', type: 'flat' },
   { tag: 'DESIGN2030', discount: 30, min_spend: 250000, message: 'DESIGN -30%', type: 'min_spend' },
   { tag: 'DESIGN2030', discount: 20, min_spend: 40000, max_spend: 249999, message: 'DESIGN -20%', type: 'min_and_max' },
   { tag: 'FRIENDSANDFAMILY', discount: 20, message: 'FRIENDS AND FAMILY -20%', type: 'flat' }
 ];
-
+ 
 export default function discountRoutes(shopify) {
   const router = express.Router();
 
