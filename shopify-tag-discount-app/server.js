@@ -6,6 +6,8 @@ import { shopifyApi, LATEST_API_VERSION } from '@shopify/shopify-api';
 import dotenv from 'dotenv';
 import discountRoutes from './routes/discount.js';
 import shippingRoutes from './routes/shipping.js';
+import metafieldRoutes from './routes/metafields.js';
+app.use('/api/metafields', metafieldRoutes(shopify));
 
 dotenv.config();
 
