@@ -1,1 +1,0 @@
-# custom-shopify-app
