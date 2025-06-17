@@ -1,5 +1,6 @@
-import { shopifyApi, MemorySessionStorage } from '@shopify/shopify-api'; // Only works in older versions
-import { MemorySessionStorage } from '@shopify/shopify-api/dist/session/storage/memory';
+import { shopifyApi, LATEST_API_VERSION } from '@shopify/shopify-api';
+import dotenv from 'dotenv';
+dotenv.config();
 
 const shopify = shopifyApi({
   apiKey: process.env.SHOPIFY_API_KEY,
@@ -8,5 +9,6 @@ const shopify = shopifyApi({
   hostName: process.env.SHOPIFY_APP_HOST.replace(/https?:\/\//, ''),
   apiVersion: LATEST_API_VERSION,
   isEmbeddedApp: true,
-  sessionStorage: new MemorySessionStorage(),
 });
+
+export default shopify;
