@@ -61,7 +61,12 @@ app.get('/auth/callback', async (req, res) => {
     const data = await result.json();
     console.log('✅ Access token:', data.access_token);
 
-    res.send('✅ App installed successfully!');
+    // res.send('✅ App installed successfully!');
+    onst __dirname = path.resolve();
+    app.use("/app", express.static(path.join(__dirname, "frontend/dist")));
+    app.get("/app/*", (req, res) => {
+      res.sendFile(path.join(__dirname, "frontend/dist/index.html"));
+    });
   } catch (err) {
     console.error('Error exchanging token:', err);
     res.status(500).send('Failed to install app ❌');
