@@ -1,37 +1,35 @@
 // server.js
 import '@shopify/shopify-api/adapters/node';
 import express from 'express';
-import authRoutes from './routes/auth.js';
-import { shopifyApi, LATEST_API_VERSION } from '@shopify/shopify-api';
 import dotenv from 'dotenv';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+import authRoutes from './routes/auth.js';
 import discountRoutes from './routes/discount.js';
 import shippingRoutes from './routes/shipping.js';
 import metafieldRoutes from './routes/metafields.js';
-app.use('/api/metafields', metafieldRoutes(shopify));
+import shopify from './shopify.js'; // ✅ this is the correct place to set up Shopify
 
 dotenv.config();
 
 const app = express();
-app.use('/', authRoutes);
-
 const PORT = process.env.PORT || 3000;
 
+// Middleware
 app.use(express.json());
 
-// Shopify API setup
-const shopify = shopifyApi({
-  apiKey: process.env.SHOPIFY_API_KEY,
-  apiSecretKey: process.env.SHOPIFY_API_SECRET,
-  scopes: process.env.SHOPIFY_SCOPES.split(','),
-  hostName: process.env.SHOPIFY_APP_HOST.replace(/https?:\/\//, ''),
-  apiVersion: LATEST_API_VERSION,
-  isEmbeddedApp: true,
-});
+// Serve frontend admin UI
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+app.use('/admin', express.static(path.join(__dirname, 'frontend')));
 
 // Routes
+app.use('/', authRoutes);
+app.use('/api/metafields', metafieldRoutes(shopify));
 app.use('/api/discount', discountRoutes(shopify));
 app.use('/api/shipping', shippingRoutes(shopify));
 
+// OAuth fallback (only if you're not using Shopify's official `authRoutes`)
 app.get('/', (req, res) => {
   const shop = req.query.shop;
   if (!shop) return res.status(400).send('Missing shop parameter ❌');
@@ -72,5 +70,5 @@ app.get('/auth/callback', async (req, res) => {
 
 // Start server
 app.listen(PORT, () => {
-  console.log(`Server listening on http://localhost:${PORT}`);
+  console.log(`🚀 Server listening at http://localhost:${PORT}`);
 });
