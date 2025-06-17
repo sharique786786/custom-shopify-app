@@ -1,48 +1,85 @@
-<!-- frontend/index.html -->
 <!DOCTYPE html>
-<html>
-  <head>
-    <title>Shopify Admin UI</title>
-    <script src="https://unpkg.com/@shopify/app-bridge"></script>
-    <script src="https://unpkg.com/@shopify/app-bridge-utils"></script>
-    <script src="https://unpkg.com/@shopify/polaris@10.0.0/build/esm/index.js"></script>
-    <link
-      rel="stylesheet"
-      href="https://unpkg.com/@shopify/polaris@10.0.0/build/esm/styles.css"
-    />
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  </head>
-  <body>
-    <div style="padding: 20px;">
-      <h1>Admin Interface</h1>
-      <button id="load">Load Metafields</button>
-      <pre id="output" style="white-space: pre-wrap; border: 1px solid #ccc; padding: 10px;"></pre>
-    </div>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Admin Interface</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 30px;
+    }
+    textarea {
+      width: 100%;
+      min-height: 200px;
+      font-family: monospace;
+      margin-top: 10px;
+    }
+    button {
+      margin-top: 10px;
+      padding: 10px 20px;
+      font-size: 16px;
+    }
+  </style>
+</head>
+<body>
+  <h2>Admin Interface</h2>
 
-    <script type="module">
-      import createApp from 'https://unpkg.com/@shopify/app-bridge?module';
-      import { getSessionToken } from 'https://unpkg.com/@shopify/app-bridge-utils?module';
+  <button id="load">🔄 Load Discount Rules</button>
+  <form id="ruleForm">
+    <label for="discountRules"><strong>Edit Discount Rules (JSON format):</strong></label><br />
+    <textarea id="discountRules" placeholder='{"VIP20": 20, "FRIEND": 10}'></textarea><br />
+    <button type="submit">💾 Save Rules</button>
+  </form>
 
-      const app = createApp({
-        apiKey: new URLSearchParams(window.location.search).get('apiKey'),
-        host: new URLSearchParams(window.location.search).get('host'),
-        forceRedirect: true,
-      });
+  <script>
+    const shop = new URLSearchParams(window.location.search).get("shop");
 
-      document.getElementById('load').addEventListener('click', async () => {
-        const token = await getSessionToken(app);
+    // Load metafields
+    document.getElementById('load').addEventListener('click', async () => {
+      try {
+        const res = await fetch(`/api/metafields?shop=${shop}`);
+        const data = await res.json();
 
-        const res = await fetch('/api/metafields', {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            'Content-Type': 'application/json',
-          },
+        const ruleMetafield = data.find(mf =>
+          mf.namespace === 'custom' && mf.key === 'discount_rules'
+        );
+
+        if (ruleMetafield) {
+          document.getElementById('discountRules').value = ruleMetafield.value;
+          alert('✅ Loaded existing discount rules.');
+        } else {
+          alert('ℹ️ No rules found. You can add new ones.');
+        }
+      } catch (err) {
+        console.error(err);
+        alert('❌ Failed to load metafields');
+      }
+    });
+
+    // Save metafields
+    document.getElementById('ruleForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const value = document.getElementById('discountRules').value;
+
+      try {
+        const res = await fetch(`/api/metafields?shop=${shop}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            namespace: 'custom',
+            key: 'discount_rules',
+            value,
+          }),
         });
 
-        const json = await res.json();
-        document.getElementById('output').textContent = JSON.stringify(json, null, 2);
-      });
-    </script>
-  </body>
+        const result = await res.json();
+        alert('✅ Discount rules saved.');
+        console.log(result);
+      } catch (err) {
+        console.error(err);
+        alert('❌ Failed to save discount rules.');
+      }
+    });
+  </script>
+</body>
 </html>
