@@ -9,27 +9,31 @@ import authRoutes from './routes/auth.js';
 import discountRoutes from './routes/discount.js';
 import shippingRoutes from './routes/shipping.js';
 import metafieldRoutes from './routes/metafields.js';
-import shopify from './shopify.js'; // ✅ this is the correct place to set up Shopify
+import shopify from './shopify.js'; // ✅ using the one true Shopify instance
 
 dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+
 // Middleware
 app.use(express.json());
 
-// Serve frontend admin UI
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-app.use('/admin', express.static(path.join(__dirname, 'frontend')));
-
 // Routes
 app.use('/', authRoutes);
-app.use('/api/metafields', metafieldRoutes(shopify));
 app.use('/api/discount', discountRoutes(shopify));
 app.use('/api/shipping', shippingRoutes(shopify));
+app.use('/api/metafields', metafieldRoutes(shopify));
 
-// OAuth fallback (only if you're not using Shopify's official `authRoutes`)
+// Serve frontend (HTML UI)
+app.use('/admin', express.static(path.join(__dirname, 'frontend')));
+app.get('/admin', (_, res) => {
+  res.sendFile(path.join(__dirname, 'frontend', 'index.html'));
+});
+
+// OAuth Start
 app.get('/', (req, res) => {
   const shop = req.query.shop;
   if (!shop) return res.status(400).send('Missing shop parameter ❌');
@@ -43,9 +47,10 @@ app.get('/', (req, res) => {
   res.redirect(installUrl);
 });
 
+// OAuth Callback
 app.get('/auth/callback', async (req, res) => {
-  const { shop, code } = req.query;
-  if (!shop || !code) return res.status(400).send('Missing shop or code ❌');
+  const { shop, code, host } = req.query;
+  if (!shop || !code || !host) return res.status(400).send('Missing shop, code, or host ❌');
 
   try {
     const result = await fetch(`https://${shop}/admin/oauth/access_token`, {
@@ -61,14 +66,17 @@ app.get('/auth/callback', async (req, res) => {
     const data = await result.json();
     console.log('✅ Access token:', data.access_token);
 
-    res.send('✅ App installed successfully!');
+    // Redirect to your embedded app UI
+    return res.redirect(
+      `/admin?shop=${encodeURIComponent(shop)}&host=${encodeURIComponent(host)}&apiKey=${process.env.SHOPIFY_API_KEY}`
+    );
   } catch (err) {
-    console.error('Error exchanging token:', err);
+    console.error('❌ Error exchanging token:', err);
     res.status(500).send('Failed to install app ❌');
   }
 });
 
 // Start server
 app.listen(PORT, () => {
-  console.log(`🚀 Server listening at http://localhost:${PORT}`);
+  console.log(`🚀 Server listening on http://localhost:${PORT}`);
 });
