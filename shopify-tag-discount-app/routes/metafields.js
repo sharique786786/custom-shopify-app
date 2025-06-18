@@ -77,5 +77,50 @@ export default function metafieldRoutes(shopify) {
     }
   });
 
+  // ✅ NEW ROUTE: Define metafield definitions
+  router.post('/define', async (req, res) => {
+    try {
+      const session = await shopify.session.customAppSession(process.env.SHOPIFY_STORE_URL);
+      session.accessToken = process.env.SHOPIFY_ACCESS_TOKEN;
+
+      const client = new shopify.clients.Rest({ session });
+
+      // Create Discount Rules metafield definition
+      await client.post({
+        path: 'metafield_definitions',
+        data: {
+          metafield_definition: {
+            name: 'Discount Rules',
+            namespace: 'rules',
+            key: 'discounts',
+            type: 'json',
+            owner_type: 'shop'
+          }
+        },
+        type: 'application/json'
+      });
+
+      // Create Shipping Rules metafield definition
+      await client.post({
+        path: 'metafield_definitions',
+        data: {
+          metafield_definition: {
+            name: 'Shipping Rules',
+            namespace: 'rules',
+            key: 'shipping',
+            type: 'json',
+            owner_type: 'shop'
+          }
+        },
+        type: 'application/json'
+      });
+
+      res.json({ success: true });
+    } catch (err) {
+      console.error('Error defining metafields:', err);
+      res.status(500).json({ error: 'Failed to create metafield definitions' });
+    }
+  });
+
   return router;
 }
