@@ -40,40 +40,47 @@ export default function metafieldRoutes(shopify) {
   // POST: Save both metafields
   router.post('/', async (req, res) => {
     const { discounts, shipping } = req.body;
-
+  
     try {
       const session = await shopify.session.customAppSession(process.env.SHOPIFY_STORE_URL);
       session.accessToken = process.env.SHOPIFY_ACCESS_TOKEN;
-
+  
       const client = new shopify.clients.Rest({ session });
-
-      const metafieldsToSave = [
-        {
-          namespace: 'rules',
-          key: 'discounts',
-          type: 'json',
-          value: JSON.stringify(discounts),
-          owner_resource: 'shop',
-          owner_id: null
+  
+      await client.put({
+        path: 'metafields',
+        data: {
+          metafield: {
+            namespace: 'rules',
+            key: 'discounts',
+            type: 'json',
+            value: JSON.stringify(discounts),
+            owner_resource: 'shop',
+            owner_id: null,
+          }
         },
-        {
-          namespace: 'rules',
-          key: 'shipping',
-          type: 'json',
-          value: JSON.stringify(shipping),
-          owner_resource: 'shop',
-          owner_id: null
-        }
-      ];
-
-      const responses = await Promise.all(metafieldsToSave.map(m =>
-        client.put({ path: 'metafields', data: { metafield: m }, type: 'json' })
-      ));
-
+        type: 'application/json',
+      });
+  
+      await client.put({
+        path: 'metafields',
+        data: {
+          metafield: {
+            namespace: 'rules',
+            key: 'shipping',
+            type: 'json',
+            value: JSON.stringify(shipping),
+            owner_resource: 'shop',
+            owner_id: null,
+          }
+        },
+        type: 'application/json',
+      });
+  
       res.json({ success: true });
-    } catch (err) {
-      console.error('Error saving metafields:', err);
-      res.status(500).send('Failed to save metafields');
+    } catch (error) {
+      console.error('❌ Metafield save error:', error?.response?.body || error);
+      res.status(500).json({ error: 'Failed to save metafields' });
     }
   });
 
