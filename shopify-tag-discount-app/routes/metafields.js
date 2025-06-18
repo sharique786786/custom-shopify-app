@@ -39,43 +39,50 @@ export default function metafieldRoutes(shopify) {
 
   // POST: Save both metafields
   router.post('/', async (req, res) => {
+    console.log('🔍 Incoming metafields payload:', req.body); // add this first
+  
     const { discounts, shipping } = req.body;
-
+  
+    if (!discounts || !shipping) {
+      console.error('❌ Missing required fields');
+      return res.status(400).json({ error: 'Missing discounts or shipping' });
+    }
+  
     try {
-      const session = await shopify.session.customAppSession(process.env.SHOPIFY_STORE_URL);
-      session.accessToken = process.env.SHOPIFY_ACCESS_TOKEN;
-
-      const client = new shopify.clients.Rest({ session });
-
-      const metafieldsToSave = [
+      const metafields = [
         {
           namespace: 'rules',
           key: 'discounts',
           type: 'json',
           value: JSON.stringify(discounts),
-          owner_resource: 'shop',
-          owner_id: null
         },
         {
           namespace: 'rules',
           key: 'shipping',
           type: 'json',
           value: JSON.stringify(shipping),
-          owner_resource: 'shop',
-          owner_id: null
         }
       ];
-
-      const responses = await Promise.all(metafieldsToSave.map(m =>
-        client.put({ path: 'metafields', data: { metafield: m }, type: 'json' })
-      ));
-
-      res.json({ success: true });
+  
+      const client = new shopify.api.clients.Rest({ session: res.locals.shopify.session });
+  
+      const responses = await Promise.all(
+        metafields.map((mf) =>
+          client.post({
+            path: 'metafields',
+            data: { metafield: mf },
+            type: 'application/json',
+          })
+        )
+      );
+  
+      res.status(200).json({ success: true, responses });
     } catch (err) {
-      console.error('Error saving metafields:', err);
-      res.status(500).send('Failed to save metafields');
+      console.error('❌ Error saving metafields:', err);
+      res.status(500).json({ error: 'Failed to save metafields' });
     }
   });
+
 
   // ✅ NEW ROUTE: Define metafield definitions
   router.post('/define', async (req, res) => {
