@@ -1,6 +1,5 @@
+// shipping.js
 import express from 'express';
-
-const SWATCH_ALLOWANCES = ['VIP20', 'DESIGN2030'];
 
 export default function shippingRoutes(shopify) {
   const router = express.Router();
@@ -19,22 +18,22 @@ export default function shippingRoutes(shopify) {
       const client = new shopify.clients.Rest({ session });
 
       const customerResponse = await client.get({ path: `customers/${customerId}` });
-      const customer = customerResponse.body.customer;
+      const customerTags = customerResponse.body.customer.tags.split(',').map(tag => tag.trim());
 
-      if (!customer || !customer.tags) {
-        return res.status(404).json({ error: 'Customer not found or no tags' });
-      }
-
-      // Properly split customer tags
-      const customerTags = customer.tags.split(',').map(tag => tag.trim());
-
-      // Check if all cart items are swatches
-      const swatchOnly = cartItems.length > 0 && cartItems.every(item => {
-        return Array.isArray(item.tags) && item.tags.includes('Swatch');
+      // ✅ Load swatch allowances from metafield
+      const metafields = await shopify.api.rest.Metafield.all({
+        session,
+        namespace: 'rules',
+        key: 'shipping',
       });
 
-      // Check if customer has allowance for free swatches
-      const allowedForSwatch = customerTags.some(tag => SWATCH_ALLOWANCES.includes(tag));
+      const swatchAllowances = metafields[0]?.value ? JSON.parse(metafields[0].value) : [];
+
+      const swatchOnly = cartItems.length > 0 && cartItems.every(item =>
+        Array.isArray(item.tags) && item.tags.includes('Swatch')
+      );
+
+      const allowedForSwatch = customerTags.some(tag => swatchAllowances.includes(tag));
 
       if (swatchOnly && allowedForSwatch) {
         res.json({ shippingRate: 0 }); // Free shipping
