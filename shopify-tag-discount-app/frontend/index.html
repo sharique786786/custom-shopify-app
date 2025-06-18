@@ -1,65 +1,25 @@
-<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="UTF-8">
-  <title>Shopify Discount & Shipping Rules</title>
-  <style>
-    body { font-family: sans-serif; padding: 20px; max-width: 900px; margin: auto; }
-    textarea { width: 100%; height: 300px; margin-bottom: 20px; font-family: monospace; }
-    button { padding: 10px 20px; font-size: 16px; }
-  </style>
-</head>
-<body>
-  <h1>Discount & Shipping Rules Editor</h1>
+<h2>Create Discount Rule</h2>
 
-  <h2>Discount Rules (Metafield: <code>rules/discounts</code>)</h2>
-  <textarea id="discounts" placeholder='[{"tag": "VIP20", "discount": 20, "message": "VIP -20%", "type": "flat"}]'></textarea>
+<form id="discount-form">
+  <label>Customer Tag: <input name="tag" required></label><br>
+  <label>Discount %: <input name="discount" type="number" required></label><br>
+  
+  <label>Type:
+    <select name="type">
+      <option value="flat">Flat</option>
+      <option value="min_spend">Min Spend</option>
+    </select>
+  </label><br>
 
-  <h2>Shipping Rules (Metafield: <code>rules/shipping</code>)</h2>
-  <textarea id="shipping" placeholder='["VIP20", "DESIGN2030"]'></textarea>
+  <label>Min Spend: <input name="min_spend" type="number"></label><br>
+  <label>Max Spend: <input name="max_spend" type="number"></label><br>
 
-  <button onclick="save()">Save</button>
-  <p id="status"></p>
+  <label>Message: <input name="message"></label><br>
+  <button type="submit">Add to List</button>
+</form>
 
-  <script>
-    const shop = new URLSearchParams(window.location.search).get('shop');
+<h3>Shipping Tag Rules</h3>
+<label><input type="checkbox" value="VIP20"> VIP20</label>
+<label><input type="checkbox" value="DESIGN2030"> DESIGN2030</label>
 
-    async function load() {
-      try {
-        const res = await fetch(`/api/metafields?shop=${shop}`);
-        const data = await res.json();
-        document.getElementById('discounts').value = JSON.stringify(data.discounts || [], null, 2);
-        document.getElementById('shipping').value = JSON.stringify(data.shipping || [], null, 2);
-      } catch (err) {
-        console.error('Failed to load rules:', err);
-        document.getElementById('status').textContent = '❌ Failed to load rules';
-      }
-    }
-
-    async function save() {
-      const status = document.getElementById('status');
-      try {
-        const discounts = JSON.parse(document.getElementById('discounts').value);
-        const shipping = JSON.parse(document.getElementById('shipping').value);
-
-        const res = await fetch(`/api/metafields?shop=${shop}`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ discounts, shipping })
-        });
-
-        if (res.ok) {
-          status.textContent = '✅ Saved successfully!';
-        } else {
-          status.textContent = '❌ Failed to save';
-        }
-      } catch (err) {
-        console.error('Error saving:', err);
-        status.textContent = '❌ Invalid JSON or server error';
-      }
-    }
-
-    load();
-  </script>
-</body>
-</html>
+<button id="save">Save All</button>
