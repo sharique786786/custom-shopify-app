@@ -10,7 +10,7 @@ import discountRoutes from './routes/discount.js';
 import shippingRoutes from './routes/shipping.js';
 import metafieldRoutes from './routes/metafields.js';
 import { shopifyApi, LATEST_API_VERSION, RestClient } from '@shopify/shopify-api';
-import shopify from '../shopify.js';// ✅ using the one true Shopify instance
+import shopify from './shopify.js';// ✅ using the one true Shopify instance
 
 dotenv.config();
 
