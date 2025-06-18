@@ -1,43 +1,43 @@
-<!-- In /frontend/index.html -->
-<h2>Discount Rules (JSON)</h2>
-<textarea id="jsonEditor" style="width: 100%; height: 200px;"></textarea>
-<br/>
-<button onclick="saveMetafields()">💾 Save</button>
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Admin Interface</title>
+</head>
+<body>
+  <h2>Admin Interface</h2>
+  <button id="load">Load Metafields</button>
+  <button id="save">Save Metafields</button>
+  <br /><br />
+  <textarea id="metafield-data" rows="20" cols="80" placeholder="Metafield JSON will appear here..."></textarea>
 
-<script>
-  async function saveMetafields() {
+  <script>
     const shop = new URLSearchParams(window.location.search).get('shop');
-    const json = document.getElementById('jsonEditor').value;
+    const metafieldTextarea = document.getElementById('metafield-data');
 
-    const res = await fetch(`/api/metafields`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        shop,
-        namespace: 'custom',
-        key: 'discount_rules',
-        value: json,
-        type: 'json',
-      }),
+    document.getElementById('load').addEventListener('click', async () => {
+      const res = await fetch(`/api/metafields?shop=${shop}`);
+      const data = await res.json();
+      metafieldTextarea.value = JSON.stringify(data.metafield || {}, null, 2);
     });
 
-    if (res.ok) {
-      alert('✅ Saved successfully!');
-    } else {
-      alert('❌ Failed to save');
-    }
-  }
+    document.getElementById('save').addEventListener('click', async () => {
+      const json = metafieldTextarea.value;
+      try {
+        const parsed = JSON.parse(json);
+        const res = await fetch(`/api/metafields?shop=${shop}`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ value: parsed })
+        });
 
-  async function loadMetafields() {
-    const shop = new URLSearchParams(window.location.search).get('shop');
-    const res = await fetch(`/api/metafields?shop=${shop}&namespace=custom&key=discount_rules`);
-    const data = await res.json();
-
-    document.getElementById('jsonEditor').value = JSON.stringify(data?.metafield?.value || {}, null, 2);
-  }
-
-  // Auto-load on page load
-  window.onload = loadMetafields;
-</script>
+        const result = await res.json();
+        alert(result.success ? '✅ Saved successfully' : '❌ Save failed');
+      } catch (e) {
+        alert('❌ Invalid JSON');
+      }
+    });
+  </script>
+</body>
+</html>
