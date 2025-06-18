@@ -1,48 +1,79 @@
 // routes/metafields.js
 import express from 'express';
 
-export default function (shopify) {
+export default function metafieldRoutes(shopify) {
   const router = express.Router();
 
-  // GET - load metafield
-  router.get('/', async (req, res) => {
-    const { shop } = req.query;
+  const METAFIELDS = [
+    { key: 'discounts', type: 'json' },
+    { key: 'shipping', type: 'json' }
+  ];
 
+  // GET: Load both metafields
+  router.get('/', async (req, res) => {
     try {
-      const session = await shopify.api.session.customAppSession(shop);
-      const metafields = await shopify.api.rest.Metafield.all({
-        session,
-        namespace: 'discounts',
-        key: 'rules',
+      const session = await shopify.session.customAppSession(process.env.SHOPIFY_STORE_URL);
+      session.accessToken = process.env.SHOPIFY_ACCESS_TOKEN;
+
+      const client = new shopify.clients.Rest({ session });
+
+      const results = await Promise.all(METAFIELDS.map(m =>
+        client.get({
+          path: 'metafields',
+          query: { namespace: 'rules', key: m.key }
+        })
+      ));
+
+      const data = {};
+      METAFIELDS.forEach((m, i) => {
+        const metafield = results[i].body.metafields[0];
+        data[m.key] = metafield ? JSON.parse(metafield.value) : null;
       });
 
-      res.json({ metafield: metafields[0]?.value || null });
-    } catch (e) {
-      console.error('Error loading metafield', e);
-      res.status(500).json({ error: 'Failed to load metafield' });
+      res.json(data);
+    } catch (err) {
+      console.error('Error loading metafields:', err);
+      res.status(500).send('Failed to load metafields');
     }
   });
 
-  // POST - save metafield
+  // POST: Save both metafields
   router.post('/', async (req, res) => {
-    const { shop } = req.query;
-    const { value } = req.body;
+    const { discounts, shipping } = req.body;
 
     try {
-      const session = await shopify.api.session.customAppSession(shop);
+      const session = await shopify.session.customAppSession(process.env.SHOPIFY_STORE_URL);
+      session.accessToken = process.env.SHOPIFY_ACCESS_TOKEN;
 
-      const metafield = new shopify.api.rest.Metafield({ session });
-      metafield.namespace = 'discounts';
-      metafield.key = 'rules';
-      metafield.type = 'json';
-      metafield.value = JSON.stringify(value);
+      const client = new shopify.clients.Rest({ session });
 
-      await metafield.save();
+      const metafieldsToSave = [
+        {
+          namespace: 'rules',
+          key: 'discounts',
+          type: 'json',
+          value: JSON.stringify(discounts),
+          owner_resource: 'shop',
+          owner_id: null
+        },
+        {
+          namespace: 'rules',
+          key: 'shipping',
+          type: 'json',
+          value: JSON.stringify(shipping),
+          owner_resource: 'shop',
+          owner_id: null
+        }
+      ];
+
+      const responses = await Promise.all(metafieldsToSave.map(m =>
+        client.put({ path: 'metafields', data: { metafield: m }, type: 'json' })
+      ));
 
       res.json({ success: true });
-    } catch (e) {
-      console.error('Error saving metafield', e);
-      res.status(500).json({ error: 'Failed to save metafield' });
+    } catch (err) {
+      console.error('Error saving metafields:', err);
+      res.status(500).send('Failed to save metafields');
     }
   });
 
