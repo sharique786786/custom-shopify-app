@@ -10,32 +10,52 @@ export default function metafieldRoutes(shopify) {
   ];
 
   // GET: Load both metafields
-  router.get('/', async (req, res) => {
-    try {
-      const session = await shopify.session.customAppSession(process.env.SHOPIFY_STORE_URL);
-      session.accessToken = process.env.SHOPIFY_ACCESS_TOKEN;
+  router.get('/define', async (req, res) => {
+  try {
+    const session = await shopify.session.customAppSession(process.env.SHOPIFY_STORE_URL);
+    session.accessToken = process.env.SHOPIFY_ACCESS_TOKEN;
 
-      const client = new shopify.clients.Rest({ session });
+    const client = new shopify.clients.Rest({ session });
 
-      const results = await Promise.all(METAFIELDS.map(m =>
-        client.get({
-          path: 'metafields',
-          query: { namespace: 'rules', key: m.key }
-        })
-      ));
+    // Create Discount Metafield Definition
+    await client.post({
+      path: 'metafield_definitions',
+      data: {
+        metafield_definition: {
+          name: 'Discount Rules',
+          namespace: 'rules',
+          key: 'discounts',
+          type: 'json',
+          owner_type: 'shop',
+          visible_to_storefront_api: false
+        }
+      },
+      type: 'application/json',
+    });
 
-      const data = {};
-      METAFIELDS.forEach((m, i) => {
-        const metafield = results[i].body.metafields[0];
-        data[m.key] = metafield ? JSON.parse(metafield.value) : null;
-      });
+    // Create Shipping Metafield Definition
+    await client.post({
+      path: 'metafield_definitions',
+      data: {
+        metafield_definition: {
+          name: 'Shipping Rules',
+          namespace: 'rules',
+          key: 'shipping',
+          type: 'json',
+          owner_type: 'shop',
+          visible_to_storefront_api: false
+        }
+      },
+      type: 'application/json',
+    });
 
-      res.json(data);
-    } catch (err) {
-      console.error('Error loading metafields:', err);
-      res.status(500).send('Failed to load metafields');
-    }
-  });
+    res.json({ success: true, message: 'Metafield definitions created' });
+
+  } catch (error) {
+    console.error('❌ Error creating metafield definitions:', error?.response?.body || error);
+    res.status(500).json({ error: 'Failed to create metafield definitions' });
+  }
+});
 
   // POST: Save both metafields
   router.post('/', async (req, res) => {
