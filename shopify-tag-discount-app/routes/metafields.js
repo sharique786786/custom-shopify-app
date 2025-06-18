@@ -37,66 +37,61 @@ export default function metafieldRoutes(shopify) {
     }
   });
 
-  // POST: Save both metafields
+  // POST: Save both metafields (custom session)
   router.post('/', async (req, res) => {
-  try {
-    console.log('✅ Incoming body:', req.body);
+    try {
+      console.log('✅ Incoming body:', req.body);
 
-    const { discounts, shipping } = req.body;
+      const { discounts, shipping } = req.body;
 
-    if (!discounts || !shipping) {
-      console.error('❌ Missing discounts or shipping in request');
-      return res.status(400).json({ error: 'Missing discounts or shipping' });
-    }
-
-    const metafields = [
-      {
-        namespace: 'rules',
-        key: 'discounts',
-        type: 'json',
-        value: JSON.stringify(discounts),
-      },
-      {
-        namespace: 'rules',
-        key: 'shipping',
-        type: 'json',
-        value: JSON.stringify(shipping),
+      if (!discounts || !shipping) {
+        console.error('❌ Missing discounts or shipping in request');
+        return res.status(400).json({ error: 'Missing discounts or shipping' });
       }
-    ];
 
-    console.log('📦 Metafields prepared for save:', JSON.stringify(metafields, null, 2));
+      const metafields = [
+        {
+          namespace: 'rules',
+          key: 'discounts',
+          type: 'json',
+          value: JSON.stringify(discounts),
+        },
+        {
+          namespace: 'rules',
+          key: 'shipping',
+          type: 'json',
+          value: JSON.stringify(shipping),
+        }
+      ];
 
-    const client = new shopify.rest.RestClient({ session: res.locals.shopify.session });
+      console.log('📦 Metafields prepared for save:', JSON.stringify(metafields, null, 2));
 
-    // Log session
-    if (!res.locals.shopify.session) {
-      console.error('❌ Shopify session not found in res.locals');
-      return res.status(401).json({ error: 'Unauthorized: No Shopify session' });
+      const session = await shopify.session.customAppSession(process.env.SHOPIFY_STORE_URL);
+      session.accessToken = process.env.SHOPIFY_ACCESS_TOKEN;
+
+      const client = new shopify.clients.Rest({ session });
+
+      const responses = await Promise.all(
+        metafields.map((mf) => {
+          console.log(`🚀 Saving metafield ${mf.key}`);
+          return client.post({
+            path: 'metafields',
+            data: { metafield: mf },
+            type: 'application/json',
+          });
+        })
+      );
+
+      console.log('✅ Metafields saved:', responses);
+      res.status(200).json({ success: true, responses });
+
+    } catch (err) {
+      console.error('❌ Error saving metafields:', err);
+      res.status(500).json({ error: 'Failed to save metafields', details: err.message });
     }
+  });
 
-    const responses = await Promise.all(
-      metafields.map((mf) => {
-        console.log(`🚀 Saving metafield ${mf.key}`);
-        return client.post({
-          path: 'metafields',
-          data: { metafield: mf },
-          type: 'application/json',
-        });
-      })
-    );
-
-    console.log('✅ Metafields saved:', responses);
-    res.status(200).json({ success: true, responses });
-
-  } catch (err) {
-    console.error('❌ Error saving metafields:', err);
-    res.status(500).json({ error: 'Failed to save metafields', details: err.message });
-  }
-});
-
-
-
-  // ✅ NEW ROUTE: Define metafield definitions
+  // Define metafield definitions
   router.post('/define', async (req, res) => {
     try {
       const session = await shopify.session.customAppSession(process.env.SHOPIFY_STORE_URL);
@@ -104,7 +99,6 @@ export default function metafieldRoutes(shopify) {
 
       const client = new shopify.clients.Rest({ session });
 
-      // Create Discount Rules metafield definition
       await client.post({
         path: 'metafield_definitions',
         data: {
@@ -119,7 +113,6 @@ export default function metafieldRoutes(shopify) {
         type: 'application/json'
       });
 
-      // Create Shipping Rules metafield definition
       await client.post({
         path: 'metafield_definitions',
         data: {
