@@ -66,7 +66,7 @@ export default function metafieldRoutes(shopify) {
 
     console.log('📦 Metafields prepared for save:', JSON.stringify(metafields, null, 2));
 
-    const client = new shopify.api.clients.Rest({ session: res.locals.shopify.session });
+    const client = new shopify.rest.RestClient({ session: res.locals.shopify.session });
 
     // Log session
     if (!res.locals.shopify.session) {
