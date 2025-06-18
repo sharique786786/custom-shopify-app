@@ -39,49 +39,61 @@ export default function metafieldRoutes(shopify) {
 
   // POST: Save both metafields
   router.post('/', async (req, res) => {
-    console.log('🔍 Incoming metafields payload:', req.body); // add this first
-  
+  try {
+    console.log('✅ Incoming body:', req.body);
+
     const { discounts, shipping } = req.body;
-  
+
     if (!discounts || !shipping) {
-      console.error('❌ Missing required fields');
+      console.error('❌ Missing discounts or shipping in request');
       return res.status(400).json({ error: 'Missing discounts or shipping' });
     }
-  
-    try {
-      const metafields = [
-        {
-          namespace: 'rules',
-          key: 'discounts',
-          type: 'json',
-          value: JSON.stringify(discounts),
-        },
-        {
-          namespace: 'rules',
-          key: 'shipping',
-          type: 'json',
-          value: JSON.stringify(shipping),
-        }
-      ];
-  
-      const client = new shopify.api.clients.Rest({ session: res.locals.shopify.session });
-  
-      const responses = await Promise.all(
-        metafields.map((mf) =>
-          client.post({
-            path: 'metafields',
-            data: { metafield: mf },
-            type: 'application/json',
-          })
-        )
-      );
-  
-      res.status(200).json({ success: true, responses });
-    } catch (err) {
-      console.error('❌ Error saving metafields:', err);
-      res.status(500).json({ error: 'Failed to save metafields' });
+
+    const metafields = [
+      {
+        namespace: 'rules',
+        key: 'discounts',
+        type: 'json',
+        value: JSON.stringify(discounts),
+      },
+      {
+        namespace: 'rules',
+        key: 'shipping',
+        type: 'json',
+        value: JSON.stringify(shipping),
+      }
+    ];
+
+    console.log('📦 Metafields prepared for save:', JSON.stringify(metafields, null, 2));
+
+    const client = new shopify.api.clients.Rest({ session: res.locals.shopify.session });
+
+    // Log session
+    if (!res.locals.shopify.session) {
+      console.error('❌ Shopify session not found in res.locals');
+      return res.status(401).json({ error: 'Unauthorized: No Shopify session' });
     }
-  });
+
+    const responses = await Promise.all(
+      metafields.map((mf) => {
+        console.log(`🚀 Saving metafield ${mf.key}`);
+        return client.post({
+          path: 'metafields',
+          data: { metafield: mf },
+          type: 'application/json',
+        });
+      })
+    );
+
+    console.log('✅ Metafields saved:', responses);
+    res.status(200).json({ success: true, responses });
+
+  } catch (err) {
+    console.error('❌ Error saving metafields:', err);
+    res.status(500).json({ error: 'Failed to save metafields', details: err.message });
+  }
+});
+
 
 
   // ✅ NEW ROUTE: Define metafield definitions
