@@ -1,25 +1,31 @@
-<h2>Create Discount Rule</h2>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin - Discount & Shipping Rules</title>
+  <script src="https://cdn.shopify.com/shopifycloud/app-bridge.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <h1>Manage Discount & Shipping Rules</h1>
 
-<form id="discount-form">
-  <label>Customer Tag: <input name="tag" required></label><br>
-  <label>Discount %: <input name="discount" type="number" required></label><br>
-  
-  <label>Type:
-    <select name="type">
-      <option value="flat">Flat</option>
-      <option value="min_spend">Min Spend</option>
-    </select>
-  </label><br>
+  <section>
+    <h2>Discount Rules</h2>
+    <textarea id="discounts-json" rows="10" placeholder='Paste JSON array of discount rules'></textarea>
+  </section>
 
-  <label>Min Spend: <input name="min_spend" type="number"></label><br>
-  <label>Max Spend: <input name="max_spend" type="number"></label><br>
+  <section>
+    <h2>Shipping Rules</h2>
+    <textarea id="shipping-json" rows="6" placeholder='Paste JSON array of shipping rules'></textarea>
+  </section>
 
-  <label>Message: <input name="message"></label><br>
-  <button type="submit">Add to List</button>
-</form>
+  <div class="actions">
+    <button id="save-btn">Save Rules</button>
+    <span id="status"></span>
+  </div>
 
-<h3>Shipping Tag Rules</h3>
-<label><input type="checkbox" value="VIP20"> VIP20</label>
-<label><input type="checkbox" value="DESIGN2030"> DESIGN2030</label>
-
-<button id="save">Save All</button>
+  <script src="admin.js"></script>
+</body>
+</html>
