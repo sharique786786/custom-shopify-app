@@ -11,4 +11,5 @@ const shopify = shopifyApi({
   isEmbeddedApp: true,
 });
 
+export const rest = shopify.rest;
 export default shopify;
