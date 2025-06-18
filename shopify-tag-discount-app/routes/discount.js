@@ -1,6 +1,12 @@
-// discount.js
 import express from 'express';
 
+const CUSTOMER_DISCOUNTS = [
+  { tag: 'VIP20', discount: 20, message: 'Tag Based Discount- VIP -20%', type: 'flat' },
+  { tag: 'DESIGN2030', discount: 30, min_spend: 250000, message: 'DESIGN -30%', type: 'min_spend' },
+  { tag: 'DESIGN2030', discount: 20, min_spend: 40000, max_spend: 249999, message: 'DESIGN -20%', type: 'min_and_max' },
+  { tag: 'FRIENDSANDFAMILY', discount: 20, message: 'FRIENDS AND FAMILY -20%', type: 'flat' }
+];
+ 
 export default function discountRoutes(shopify) {
   const router = express.Router();
 
@@ -12,24 +18,15 @@ export default function discountRoutes(shopify) {
       session.accessToken = process.env.SHOPIFY_ACCESS_TOKEN;
 
       const client = new shopify.clients.Rest({ session });
-
       const customerData = await client.get({ path: `customers/${customerId}` });
+
+      // Correctly parse customer tags to array
       const customerTags = customerData.body.customer.tags.split(',').map(tag => tag.trim());
-
-      // ✅ Load discount rules from metafield
-      const metafields = await shopify.api.rest.Metafield.all({
-        session,
-        namespace: 'rules',
-        key: 'discounts',
-      });
-
-      const rulesRaw = metafields[0]?.value;
-      const rules = rulesRaw ? JSON.parse(rulesRaw) : [];
 
       let selectedDiscount = null;
       let maxDiscount = 0;
 
-      rules.forEach(discountRule => {
+      CUSTOMER_DISCOUNTS.forEach(discountRule => {
         if (customerTags.includes(discountRule.tag)) {
           let eligible = false;
 
@@ -38,8 +35,8 @@ export default function discountRoutes(shopify) {
           } else if (discountRule.type === 'min_spend' && cartSubtotal >= discountRule.min_spend) {
             eligible = true;
           } else if (discountRule.type === 'min_and_max' &&
-            cartSubtotal >= discountRule.min_spend &&
-            cartSubtotal <= discountRule.max_spend) {
+                     cartSubtotal >= discountRule.min_spend &&
+                     cartSubtotal <= discountRule.max_spend) {
             eligible = true;
           }
 
