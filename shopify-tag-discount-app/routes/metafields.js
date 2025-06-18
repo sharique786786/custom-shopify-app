@@ -51,9 +51,9 @@ export default function metafieldRoutes(shopify) {
 
     res.json({ success: true, message: 'Metafield definitions created' });
 
-  } catch (error) {
-    console.error('❌ Error creating metafield definitions:', error?.response?.body || error);
-    res.status(500).json({ error: 'Failed to create metafield definitions' });
+    } catch (error) {
+    console.error('❌ Error creating metafield definitions:', JSON.stringify(error, null, 2));
+    res.status(500).json({ error: error?.response?.body?.errors || error.message || 'Unknown error' });
   }
 });
 
