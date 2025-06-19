@@ -1,8 +1,8 @@
-name = "Tag Based Discount"
-type = "product-discount"
-api_version = "2025-04"
-runtime = "nodejs20"
+name = "Tag Discount Function"
+type = "discount_function"
+api_version = "2024-04"
+description = "Applies tag-based discounts from metafields"
 
-[[metafields]]
-namespace = "rules"
-key = "discounts"
+[[settings]]
+name = "Function Settings"
+type = "json"
