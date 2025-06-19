@@ -2,5 +2,8 @@ name = "Tag Discount Function"
 type = "function"
 api_version = "2024-04"
 
+[build]
+command = "npm run build"
+
 [configuration]
 function_type = "product-discount"
