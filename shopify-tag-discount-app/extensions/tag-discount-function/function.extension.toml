@@ -1,0 +1,8 @@
+name = "Tag Based Discount"
+type = "product-discount"
+api_version = "2025-04"
+runtime = "nodejs20"
+
+[[metafields]]
+namespace = "rules"
+key = "discounts"
