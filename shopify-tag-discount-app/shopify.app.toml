@@ -1,7 +1,18 @@
 name = "Tag Discount Function App"
-client_id = "4dc11c9394b4df7ae6fa0cf17bac1345"
+client_id = "your-client-id-from-partners-dashboard"
 application_url = "https://custom-shopify-app.onrender.com"
 embedded = true
+
+[auth]
+redirect_urls = ["/auth/callback"]
+access_scopes = "read_products,write_products,read_customers,write_discounts,read_shipping,write_shipping"
+
+[webhooks]
+api_version = "2024-04"
+# Leave empty if not using webhooks yet
+# Example:
+# [webhooks.subscriptions]
+# "customers/create" = "/webhooks/customers-create"
 
 [[extensions]]
 type = "discount_function"
