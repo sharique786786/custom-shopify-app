@@ -1,8 +1,6 @@
 name = "Tag Discount Function"
-type = "discount_function"
+type = "function"
 api_version = "2024-04"
-description = "Applies tag-based discounts from metafields"
 
-[[settings]]
-name = "Function Settings"
-type = "json"
+[configuration]
+function_type = "product-discount"
