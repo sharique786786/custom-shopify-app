@@ -3,6 +3,6 @@
   "version": "1.0.0",
   "main": "src/run.js",
   "scripts": {
-    "build": "cp src/run.js dist/run.js"
+    "build": "node build.js"
   }
 }
