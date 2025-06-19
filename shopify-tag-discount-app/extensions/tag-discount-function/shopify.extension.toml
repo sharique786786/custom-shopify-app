@@ -1,0 +1,4 @@
+name = "Tag Discount Function"
+type = "discount_function"
+api_version = "2025-04"
+metafields = ["rules.discounts"]
